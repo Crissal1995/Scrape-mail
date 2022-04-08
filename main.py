@@ -51,6 +51,10 @@ assert_response(response)
 # get count of emails in selected inbox
 count_messages = int(count_messages_binary[0].decode("utf-8"))
 
+# get all messages from server
+# TODO add some search filters?
+#  https://docs.python.org/3.8/library/imaplib.html#imaplib.IMAP4.search
+#  it can be also done later with email_message, an abstraction of an Email Message
 response, email_ids_binary = imap.search(None, "ALL")
 assert_response(response)
 
@@ -75,4 +79,4 @@ for email_id in email_ids:
 
             with open(full_path, "bw") as f:
                 f.write(part.get_payload(decode=True))
-            print(f"Downloaded {os_subject}/{os_filename}")
+            print(f"Downloaded \"{os_subject}/{os_filename}\"")
