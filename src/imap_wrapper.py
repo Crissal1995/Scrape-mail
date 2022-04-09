@@ -1,7 +1,10 @@
 import email
 import imaplib
+import logging
 from email.message import Message
 from typing import Generator, Optional
+
+logger = logging.getLogger(__name__)
 
 
 class ImapWrapper:
@@ -55,6 +58,7 @@ class ImapWrapper:
             mailbox=inbox, readonly=True
         )
         self.assert_response(response)
+        logger.debug(f"Changed current inbox to {inbox}")
 
     def email_messages_gen(self) -> Generator[Message, None, None]:
         """Returns a generator of Email Messages from the selected inbox"""

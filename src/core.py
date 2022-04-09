@@ -1,4 +1,5 @@
 import email
+import logging
 import os
 import random
 import re
@@ -9,7 +10,24 @@ from typing import Optional, Sequence, Union
 
 from src.imap_wrapper import ImapWrapper
 
+logger = logging.getLogger(__name__)
+
 DEFAULT_OUTPUT_DIR = "output"
+
+
+class Utility:
+    @classmethod
+    def bytes_to_human(cls, bytes_count: int) -> str:
+        suffix_index = -1
+        suffices = "KMGTP"
+        while bytes_count >= 1024:
+            bytes_count //= 1024
+            suffix_index += 1
+        if suffix_index == -1:
+            suffix = "B"
+        else:
+            suffix = suffices[suffix_index] + "B"
+        return f"{bytes_count}{suffix}"
 
 
 class Cleaner:
@@ -113,11 +131,13 @@ class Attachment:
 
 class Downloader:
     """The interface for the attachments downloader
-    imap_wrapper is the ImapWrapper object obtained, used to retrieve emails
-    file_pattern and subject_pattern are two patterns that can be provided
-     as None, string, or re.Pattern; they are used to match only a subset of
-     messages (filtering for filename and subject respectively);
-     if they are None, the wildcard '.*' will be used, to match everything"""
+
+    - imap_wrapper is the ImapWrapper object obtained, used to retrieve emails
+
+    - file_pattern and subject_pattern are two patterns that can be provided
+      as None, string, or re.Pattern; they are utilised to match only a subset of
+      messages (filtering for filename and subject respectively);
+      if they are None, to match everything the wildcard '.*' will be used"""
 
     def __init__(
         self,
@@ -173,10 +193,13 @@ class Downloader:
 
         return attachments
 
-    def download_attachments(self):
+    def download_attachments(self) -> (int, int):
         """Retrieve messages and store them as they go
         For performance and memory reasons, this is done like get_attachments,
         so using the ImapWrapper generator, storing messages to filesystem but not in memory"""
+        count = 0
+        bytes_count = 0
+
         for email_message in self.imap_wrapper.email_messages_gen():
             subject = email_message["Subject"]
             if not self.subject_pattern.match(subject):
@@ -185,3 +208,7 @@ class Downloader:
 
             for attachment in attachments:
                 attachment.download(path=self.output_dir / subject)
+                count += 1
+                bytes_count += len(attachment.payload)
+
+        return count, bytes_count
