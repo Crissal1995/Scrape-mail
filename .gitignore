@@ -3,3 +3,5 @@ venv
 credentials.json
 .mypy_cache
 output
+
+src/__pycache__/
