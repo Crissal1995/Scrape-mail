@@ -9,6 +9,8 @@ from typing import Optional, Sequence, Union
 
 from src.imap_wrapper import ImapWrapper
 
+DEFAULT_OUTPUT_DIR = "output"
+
 
 class Cleaner:
     @classmethod
@@ -78,8 +80,6 @@ class Attachment:
     payload: bytes
     message: Optional[email.message.Message] = None
 
-    _DEFAULT_OUTPUT_DIR = "output"
-
     def __post_init__(self):
         """After created an object, we want it's filename to be windows-compliant"""
         self.filename = Cleaner.win_compatible_string(self.filename)
@@ -93,7 +93,7 @@ class Attachment:
         self, path: Union[str, os.PathLike, None] = None, create_dirs: bool = True
     ):
         if path is None:
-            path = Path(f"{self._DEFAULT_OUTPUT_DIR}/{self.subject}/{self.filename}")
+            path = Path(f"{DEFAULT_OUTPUT_DIR}/{self.subject}")
 
         if isinstance(path, str):
             path = Path(path)
@@ -101,8 +101,8 @@ class Attachment:
         parts = [Cleaner.win_compatible_string(part) for part in path.parts]
         clean_path = Path("/".join(parts))
 
-        if clean_path.is_dir():
-            clean_path /= self.filename
+        # suppose the path provided it's always a directory
+        clean_path /= self.filename
 
         if create_dirs:
             os.makedirs(clean_path.parent, exist_ok=True)
@@ -124,10 +124,12 @@ class Downloader:
         imap_wrapper: ImapWrapper,
         file_pattern: Union[None, str, re.Pattern] = None,
         subject_pattern: Union[None, str, re.Pattern] = None,
+        output_dir: Union[str, os.PathLike] = DEFAULT_OUTPUT_DIR,
     ):
         self.file_pattern = self.get_pattern(file_pattern)
         self.subject_pattern = self.get_pattern(subject_pattern)
         self.imap_wrapper = imap_wrapper
+        self.output_dir = Path(output_dir)
 
     @staticmethod
     def get_pattern(
@@ -182,4 +184,4 @@ class Downloader:
             attachments = self.get_attachments_from_message(email_message)
 
             for attachment in attachments:
-                attachment.download()
+                attachment.download(path=self.output_dir / subject)
