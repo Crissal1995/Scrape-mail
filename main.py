@@ -26,8 +26,8 @@ if __name__ == "__main__":
 
     creds = json.load(open("credentials.json"))
 
-    my_subject_pattern = Downloader.get_pattern(".*prima.*")
-    my_file_pattern = Downloader.get_pattern(".*MODELLO.*")
+    my_subject_pattern = Downloader.get_pattern(".*seconda.*")
+    my_file_pattern = Downloader.get_pattern(".*MODELLO7.*")
 
     main(
         username=creds["email"],

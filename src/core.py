@@ -93,19 +93,21 @@ class Attachment:
         self, path: Union[str, os.PathLike, None] = None, create_dirs: bool = True
     ):
         if path is None:
-            path = f"{self._DEFAULT_OUTPUT_DIR}/{self.subject}/{self.filename}"
+            path = Path(f"{self._DEFAULT_OUTPUT_DIR}/{self.subject}/{self.filename}")
 
-        parts = [Cleaner.win_compatible_string(part) for part in path.split("/")]
-        clean_path = "/".join(parts)
-        user_path = Path(clean_path)
+        if isinstance(path, str):
+            path = Path(path)
 
-        if user_path.is_dir():
-            user_path /= self.filename
+        parts = [Cleaner.win_compatible_string(part) for part in path.parts]
+        clean_path = Path("/".join(parts))
+
+        if clean_path.is_dir():
+            clean_path /= self.filename
 
         if create_dirs:
-            os.makedirs(user_path.parent, exist_ok=True)
+            os.makedirs(clean_path.parent, exist_ok=True)
 
-        with open(user_path, "wb") as f:
+        with open(clean_path, "wb") as f:
             f.write(self.payload)
 
 
