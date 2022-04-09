@@ -19,15 +19,15 @@ class Utility:
     @classmethod
     def bytes_to_human(cls, bytes_count: int) -> str:
         suffix_index = -1
-        suffices = "KMGTP"
+        suffices = "KMGTP"  # I think petabyte it's enough :)
         while bytes_count >= 1024:
-            bytes_count //= 1024
+            bytes_count /= 1024
             suffix_index += 1
         if suffix_index == -1:
             suffix = "B"
         else:
             suffix = suffices[suffix_index] + "B"
-        return f"{bytes_count}{suffix}"
+        return f"{round(bytes_count, 2)}{suffix}"
 
 
 class Cleaner:
