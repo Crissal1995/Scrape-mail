@@ -6,7 +6,7 @@ b2h_decimal = partial(bytes_to_human, unit="decimal")
 b2h_binary = partial(bytes_to_human, unit="binary")
 
 
-def test_core_utility_decimal():
+def test_b2h_decimal():
     base = 1000
     assert b2h_decimal(base - 1) == "999 B"
     assert b2h_decimal(base) == "1.0 KB"
@@ -15,7 +15,7 @@ def test_core_utility_decimal():
     assert b2h_decimal(base**2, integer=True) == "1 MB"
 
 
-def test_core_utility_binary():
+def test_b2h_binary():
     base = 1024
     assert b2h_binary(base - 1) == "1023 B"
     assert b2h_binary(base) == "1.0 KiB"
