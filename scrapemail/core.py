@@ -9,49 +9,11 @@ from string import ascii_lowercase
 from typing import Optional, Sequence, Union
 
 from .imap_wrapper import ImapWrapper
+from .utility import bytes_to_human
 
 logger = logging.getLogger(__name__)
 
 DEFAULT_OUTPUT_DIR = "output"
-
-
-class Utility:
-    @classmethod
-    def bytes_to_human(
-        cls, bytes_count: int, unit: str = "decimal", integer: bool = False
-    ) -> str:
-        """Convert an integer (amount of bytes) to its corresponding
-        human-readable value.
-
-        It's possible to select the desired unit:
-         - decimal: base 10 (10^3 B = 1000 B = 1 KB)
-         - binary: base 2 (2^10 B = 1024 B = 1 KiB)"""
-        valid_units = ("decimal", "binary")
-        unit = unit.lower()
-        if unit not in valid_units:
-            errmsg = f"Invalid selected unit! Valid are {valid_units}, but {unit} was provided"
-            raise ValueError(errmsg)
-        if unit == "decimal":
-            base = 1000
-        else:  # unit == "binary"
-            base = 1024
-
-        suffix_index = -1
-        suffices = "KMGTPEZY"
-        while bytes_count >= base:
-            bytes_count /= base
-            suffix_index += 1
-
-        suffix = ""
-        if suffix_index >= 0:
-            suffix = suffices[suffix_index]
-            if unit == "binary":
-                suffix += "i"
-        suffix += "B"
-
-        if integer:
-            bytes_count = int(bytes_count)
-        return f"{round(bytes_count, 3)} {suffix}"
 
 
 class Cleaner:
@@ -116,14 +78,14 @@ class Attachment:
     """An abstraction for the attachment of a Message
     Filename it's the name of the attachment,
     Payload its content
-    Message is optional and it's the original message sent to server"""
+    Message is optional, and it's the original message sent to server"""
 
     filename: str
     payload: bytes
     message: Optional[email.message.Message] = None
 
     def __post_init__(self):
-        """After created an object, we want it's filename to be windows-compliant"""
+        """After created an object, we want its filename to be windows-compliant"""
         self.filename = Cleaner.win_compatible_string(self.filename)
 
     @property
@@ -211,7 +173,7 @@ class Downloader:
 
             logger.debug(f"Found an attachment [filename: {filename}]")
             payload = email_part.get_payload(decode=True)
-            bytes2str = Utility.bytes_to_human(len(payload))
+            bytes2str = bytes_to_human(len(payload))
             attachments.append(Attachment(filename, payload, message))
             logger.debug(f"Attachment downloaded [{bytes2str}]")
 
@@ -255,7 +217,7 @@ class Downloader:
             path = self.output_dir / subject
             for j, attachment in enumerate(attachments):
                 attachment.download(path=path)
-                bytes_str = Utility.bytes_to_human(attachment.bytes_count)
+                bytes_str = bytes_to_human(attachment.bytes_count)
                 logger.info(
                     f"Attachment #{j+1} [{bytes_str}, filename: {attachment.filename}]"
                 )

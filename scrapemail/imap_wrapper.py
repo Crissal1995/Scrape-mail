@@ -41,6 +41,8 @@ class ImapWrapper:
         # will fail if wrong credentials
         self.imap_conn.login(user=username, password=password)
 
+        logger.debug(f"Succesfully connected to IMAP server [username: {username}]")
+
         # select an inbox to read in the __init__ process
         # will select the default mailbox if no one is specified by the user
         self.change_inbox(inbox_to_select)

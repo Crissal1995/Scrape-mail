@@ -1,11 +1,9 @@
-import json
 import logging
+import pathlib
 import re
-import shutil
 from typing import Union
 
-from scrapemail import Downloader
-from scrapemail.core import Utility
+from scrapemail import Downloader, utility
 from scrapemail.imap_wrapper import GmailImapWrapper
 
 FORMAT = "%(asctime)s :: %(levelname)s :: [%(module)s.%(funcName)s.%(lineno)d] :: %(message)s"
@@ -43,10 +41,10 @@ def main(
     file_pattern: Union[None, str, re.Pattern] = None,
     subject_pattern: Union[None, str, re.Pattern] = None,
     *,
-    logging_verbose: bool = False,
+    verbose: bool = False,
 ):
-    logger = get_logger(verbose=logging_verbose)
-    logger.info("Execution started")
+    logger = get_logger(verbose=verbose)
+    logger.info(f"Execution started for username {username}")
 
     imap = GmailImapWrapper(username=username, password=password)
     downloader = Downloader(
@@ -55,26 +53,63 @@ def main(
     logger.info(f"Download output path: {downloader.output_dir}")
     count, bytes_count = downloader.download_attachments()
     plural = "s" if count != 1 else ""
-    bytes_human = Utility.bytes_to_human(bytes_count)
+    bytes_human = utility.bytes_to_human(bytes_count)
     logger.info("Execution finished")
     logger.info(f"{count} attachment{plural} downloaded [{bytes_human} downloaded]")
 
 
 if __name__ == "__main__":
-    # DEBUG, rimuovere quando in prod
-    shutil.rmtree("output", ignore_errors=True)
+    import argparse
 
-    creds = json.load(open("credentials.json"))
+    description = (
+        "ScrapeMail is used to easily download all attachments "
+        "from a mailbox via IMAP server, being able to specify individual "
+        "filters for both the subject of the mail and the attachments themselves."
+    )
+    parser = argparse.ArgumentParser(description=description)
 
-    my_subject_pattern = Downloader.get_pattern(".*seconda.*")
-    all_subject_pattern = Downloader.get_pattern(pattern=None)
-    my_file_pattern = Downloader.get_pattern(".*MODELLO7.*")
-    all_file_pattern = Downloader.get_pattern(pattern=None)
+    credentials_default = "credentials.json"
+    parser.add_argument(
+        "-c",
+        "--credentials",
+        default=credentials_default,
+        help=f"Credentials file to use, alternative to -u; defaults to {credentials_default}",
+    )
+    parser.add_argument(
+        "-u",
+        "--username",
+        help="Username for the imap server, alternative to -c",
+    )
+    parser.add_argument(
+        "-sp", "--subject-pattern", help="Regexp pattern for email subjects"
+    )
+    parser.add_argument(
+        "-fp", "--file-pattern", help="Regexp pattern for attachment filenames"
+    )
+    parser.add_argument(
+        "-v", "--verbose", action="store_true", help="Increase logging verbosity"
+    )
+
+    args = parser.parse_args()
+    args_dict = vars(args)
+
+    username = args_dict.get("username")
+    uses_username = bool(username)
+
+    credentials_path = pathlib.Path(args_dict["credentials"])
+    uses_credentials = credentials_path.is_file()
+
+    if uses_username:
+        username, password = utility.get_credentials_from_username(username)
+    elif uses_credentials:
+        username, password = utility.get_credentials_from_file(credentials_path)
+    else:
+        username, password = utility.get_credentials()
 
     main(
-        username=creds["email"],
-        password=creds["password"],
-        file_pattern=all_file_pattern,
-        subject_pattern=all_subject_pattern,
-        logging_verbose=False,
+        username=username,
+        password=password,
+        file_pattern=args_dict.get("file_pattern"),
+        subject_pattern=args_dict.get("subject_pattern"),
+        verbose=args_dict.get("verbose"),
     )
