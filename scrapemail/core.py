@@ -17,20 +17,41 @@ DEFAULT_OUTPUT_DIR = "output"
 
 class Utility:
     @classmethod
-    def bytes_to_human(cls, bytes_count: int) -> str:
+    def bytes_to_human(
+        cls, bytes_count: int, unit: str = "decimal", integer: bool = False
+    ) -> str:
+        """Convert an integer (amount of bytes) to its corresponding
+        human-readable value.
+
+        It's possible to select the desired unit:
+         - decimal: base 10 (10^3 B = 1000 B = 1 KB)
+         - binary: base 2 (2^10 B = 1024 B = 1 KiB)"""
+        valid_units = ("decimal", "binary")
+        unit = unit.lower()
+        if unit not in valid_units:
+            errmsg = f"Invalid selected unit! Valid are {valid_units}, but {unit} was provided"
+            raise ValueError(errmsg)
+        if unit == "decimal":
+            base = 1000
+        else:  # unit == "binary"
+            base = 1024
+
         suffix_index = -1
         suffices = "KMGTPEZY"
-        while bytes_count >= 1024:
-            bytes_count /= 1024
+        while bytes_count >= base:
+            bytes_count /= base
             suffix_index += 1
 
         suffix = ""
         if suffix_index >= 0:
             suffix = suffices[suffix_index]
-        # https://en.wikipedia.org/wiki/Byte#Multiple-byte_units
-        suffix += "iB"
+            if unit == "binary":
+                suffix += "i"
+        suffix += "B"
 
-        return f"{round(bytes_count, 2)} {suffix}"
+        if integer:
+            bytes_count = int(bytes_count)
+        return f"{round(bytes_count, 3)} {suffix}"
 
 
 class Cleaner:
