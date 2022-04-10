@@ -25,7 +25,7 @@ def get_logger(verbose: bool = False, log_format: str = FORMAT):
     # file_debug_handler.setLevel(logging.DEBUG)
 
     # set formatters and add handlers to main logger
-    logger = logging.getLogger("src")
+    logger = logging.getLogger("scrapemail")
     logger.setLevel(logging.DEBUG)
 
     handlers = (stream_handler,)
