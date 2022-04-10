@@ -8,7 +8,7 @@ from pathlib import Path
 from string import ascii_lowercase
 from typing import Optional, Sequence, Union
 
-from src.imap_wrapper import ImapWrapper
+from .imap_wrapper import ImapWrapper
 
 logger = logging.getLogger(__name__)
 

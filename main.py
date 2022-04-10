@@ -4,8 +4,9 @@ import re
 import shutil
 from typing import Union
 
-from src.core import Downloader, Utility
-from src.imap_wrapper import GmailImapWrapper
+from scrapemail import Downloader
+from scrapemail.core import Utility
+from scrapemail.imap_wrapper import GmailImapWrapper
 
 FORMAT = "%(asctime)s :: %(levelname)s :: [%(module)s.%(funcName)s.%(lineno)d] :: %(message)s"
 
