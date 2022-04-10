@@ -6,7 +6,7 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 from string import ascii_lowercase
-from typing import Optional, Sequence, Union
+from typing import List, Sequence, Union
 
 from .imap_wrapper import ImapWrapper
 from .utility import bytes_to_human
@@ -80,18 +80,13 @@ class Attachment:
     Payload its content
     Message is optional, and it's the original message sent to server"""
 
+    subject: str
     filename: str
     payload: bytes
-    message: Optional[email.message.Message] = None
 
     def __post_init__(self):
         """After created an object, we want its filename to be windows-compliant"""
         self.filename = Cleaner.win_compatible_string(self.filename)
-
-    @property
-    def subject(self):
-        """Returns the subject of the email message"""
-        return self.message["Subject"]
 
     @property
     def bytes_count(self):
@@ -159,8 +154,9 @@ class Downloader:
 
     def get_attachments_from_message(
         self, message: email.message.Message
-    ) -> Sequence[Attachment]:
+    ) -> List[Attachment]:
         attachments = []
+        subject = message["Subject"]
 
         for i, email_part in enumerate(message.walk()):
             filename = email_part.get_filename() or ""
@@ -174,12 +170,12 @@ class Downloader:
             logger.debug(f"Found an attachment [filename: {filename}]")
             payload = email_part.get_payload(decode=True)
             bytes2str = bytes_to_human(len(payload))
-            attachments.append(Attachment(filename, payload, message))
+            attachments.append(Attachment(subject, filename, payload))
             logger.debug(f"Attachment downloaded [{bytes2str}]")
 
         return attachments
 
-    def get_attachments(self) -> Sequence[Attachment]:
+    def get_attachments(self) -> List[Attachment]:
         attachments = []
 
         for email_message in self.imap_wrapper.email_messages_gen():
