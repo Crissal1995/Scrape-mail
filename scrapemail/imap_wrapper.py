@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 class ImapWrapper:
     IMAP4_PORT = 143
     IMAP4_SSL_PORT = 993
+    DEFAULT_INBOX = "INBOX"
 
     def __init__(
         self,
@@ -41,11 +42,14 @@ class ImapWrapper:
         # will fail if wrong credentials
         self.imap_conn.login(user=username, password=password)
 
-        logger.debug(f"Succesfully connected to IMAP server [username: {username}]")
+        logger.info(f"Succesfully connected to IMAP server [username: {username}]")
 
         # select an inbox to read in the __init__ process
         # will select the default mailbox if no one is specified by the user
+        inbox_to_select = inbox_to_select or self.DEFAULT_INBOX
         self.change_inbox(inbox_to_select)
+
+        logger.info(f"Succesfully selected inbox: {inbox_to_select}")
 
     @staticmethod
     def assert_response(value: str, expected: str = "OK"):
@@ -91,3 +95,23 @@ class GmailImapWrapper(ImapWrapper):
             port=self.IMAP4_SSL_PORT,
             inbox_to_select=inbox_to_select,
         )
+
+
+class ImapWrapperFactory:
+    @classmethod
+    def get_wrapper(cls, username: str, password: str, **kwargs) -> ImapWrapper:
+        """Retrieve the correct imap wrapper based on the provided username,
+        checking its domain to match available wrappers"""
+
+        parts = username.lower().split("@")
+        if len(parts) != 2:
+            logger.warning(
+                "Invalid username provided? The default imap wrapper will be provided"
+            )
+            iw = ImapWrapper(username=username, password=password, **kwargs)
+        elif parts[1] == "gmail.com":
+            iw = GmailImapWrapper(username=username, password=password, **kwargs)
+        else:
+            iw = ImapWrapper(username=username, password=password, **kwargs)
+        logger.debug(f"Imap Wrapper found: {iw.__class__.__name__}")
+        return iw

@@ -1,10 +1,10 @@
 import logging
 import pathlib
 import re
-from typing import Union
+from typing import Optional, Union
 
 from scrapemail import Downloader, utility
-from scrapemail.imap_wrapper import GmailImapWrapper
+from scrapemail.imap_wrapper import ImapWrapperFactory
 
 FORMAT = "%(asctime)s :: %(levelname)s :: [%(module)s.%(funcName)s.%(lineno)d] :: %(message)s"
 
@@ -38,6 +38,7 @@ def get_logger(verbose: bool = False, log_format: str = FORMAT):
 def main(
     username: str,
     password: str,
+    inbox: Optional[str] = None,
     file_pattern: Union[None, str, re.Pattern] = None,
     subject_pattern: Union[None, str, re.Pattern] = None,
     *,
@@ -46,11 +47,15 @@ def main(
     logger = get_logger(verbose=verbose)
     logger.info(f"Execution started for username {username}")
 
-    imap = GmailImapWrapper(username=username, password=password)
-    downloader = Downloader(
-        imap_wrapper=imap, file_pattern=file_pattern, subject_pattern=subject_pattern
+    imap_wrapper = ImapWrapperFactory.get_wrapper(
+        username=username, password=password, inbox_to_select=inbox
     )
-    logger.info(f"Download output path: {downloader.output_dir}")
+    downloader = Downloader(
+        imap_wrapper=imap_wrapper,
+        file_pattern=file_pattern,
+        subject_pattern=subject_pattern,
+    )
+    logger.info(f"Download path: {downloader.output_dir}")
     count, bytes_count = downloader.download_attachments()
     plural = "s" if count != 1 else ""
     bytes_human = utility.bytes_to_human(bytes_count)
@@ -68,12 +73,17 @@ if __name__ == "__main__":
     )
     parser = argparse.ArgumentParser(description=description)
 
-    credentials_default = "credentials.json"
+    parser.add_argument(
+        "-i",
+        "--inbox",
+        help="Mail inbox to use; if not provided, the default one will be used",
+    )
+    default_credentials = "credentials.json"
     parser.add_argument(
         "-c",
         "--credentials",
-        default=credentials_default,
-        help=f"Credentials file to use, alternative to -u; defaults to {credentials_default}",
+        default=default_credentials,
+        help=f"Credentials file to use, alternative to -u; defaults to {default_credentials}",
     )
     parser.add_argument(
         "-u",
@@ -109,6 +119,7 @@ if __name__ == "__main__":
     main(
         username=username,
         password=password,
+        inbox=args_dict.get("inbox"),
         file_pattern=args_dict.get("file_pattern"),
         subject_pattern=args_dict.get("subject_pattern"),
         verbose=args_dict.get("verbose"),
