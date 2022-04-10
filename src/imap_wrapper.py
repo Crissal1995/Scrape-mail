@@ -66,6 +66,7 @@ class ImapWrapper:
         self.assert_response(response)
 
         email_ids = str(email_ids_binary[0]).strip("b'").split()
+        logger.info(f"Count of total found emails: {len(email_ids)}")
 
         for email_id in email_ids:
             response, data = self.imap_conn.fetch(email_id, "(RFC822)")

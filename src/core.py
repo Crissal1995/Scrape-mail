@@ -110,6 +110,11 @@ class Attachment:
         """Returns the subject of the email message"""
         return self.message["Subject"]
 
+    @property
+    def bytes_count(self):
+        """Returns the count of bytes occupied by the payload of the attachment"""
+        return len(self.payload)
+
     def download(
         self, path: Union[str, os.PathLike, None] = None, create_dirs: bool = True
     ):
@@ -175,13 +180,19 @@ class Downloader:
         attachments = []
 
         for i, email_part in enumerate(message.walk()):
-            filename = email_part.get_filename()
+            filename = email_part.get_filename() or ""
+            if not filename:
+                continue  # not an attachment
 
-            if not filename or not self.file_pattern.match(filename):
+            if not self.file_pattern.match(filename):
+                logger.debug("Attachment doesn't match the provided pattern")
                 continue
 
+            logger.debug(f"Found an attachment [filename: {filename}]")
             payload = email_part.get_payload(decode=True)
+            bytes2str = Utility.bytes_to_human(len(payload))
             attachments.append(Attachment(filename, payload, message))
+            logger.debug(f"Attachment downloaded [{bytes2str}]")
 
         return attachments
 
@@ -203,14 +214,30 @@ class Downloader:
         count = 0
         bytes_count = 0
 
-        for email_message in self.imap_wrapper.email_messages_gen():
-            subject = email_message["Subject"]
+        for i, email_message in enumerate(self.imap_wrapper.email_messages_gen()):
+            subject: str = email_message["Subject"] or ""
+            logger.debug(f"Email #{i} with subject: {subject}")
             if not self.subject_pattern.match(subject):
+                logger.debug("Subject doesn't match the provided pattern")
                 continue
+
+            logger.debug("Subject matches the provided pattern")
             attachments = self.get_attachments_from_message(email_message)
 
-            for attachment in attachments:
-                attachment.download(path=self.output_dir / subject)
+            if not attachments:
+                logger.debug("No attachment found")
+                continue
+
+            logger.info(
+                f"Found {len(attachments)} valid attachments for email with subject: {subject}"
+            )
+            path = self.output_dir / subject
+            for j, attachment in enumerate(attachments):
+                attachment.download(path=path)
+                bytes_str = Utility.bytes_to_human(attachment.bytes_count)
+                logger.info(
+                    f"Attachment #{j+1} [{bytes_str}, filename: {attachment.filename}]"
+                )
                 count += 1
                 bytes_count += len(attachment.payload)
 

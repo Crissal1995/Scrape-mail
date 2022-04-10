@@ -51,10 +51,12 @@ def main(
     downloader = Downloader(
         imap_wrapper=imap, file_pattern=file_pattern, subject_pattern=subject_pattern
     )
+    logger.info(f"Download output path: {downloader.output_dir}")
     count, bytes_count = downloader.download_attachments()
+    plural = "s" if count != 1 else ""
     bytes_human = Utility.bytes_to_human(bytes_count)
     logger.info("Execution finished")
-    logger.info(f"{count} attachments downloaded [{bytes_human} downloaded]")
+    logger.info(f"{count} attachment{plural} downloaded [{bytes_human} downloaded]")
 
 
 if __name__ == "__main__":
@@ -64,11 +66,14 @@ if __name__ == "__main__":
     creds = json.load(open("credentials.json"))
 
     my_subject_pattern = Downloader.get_pattern(".*seconda.*")
+    all_subject_pattern = Downloader.get_pattern(pattern=None)
     my_file_pattern = Downloader.get_pattern(".*MODELLO7.*")
+    all_file_pattern = Downloader.get_pattern(pattern=None)
 
     main(
         username=creds["email"],
         password=creds["password"],
-        file_pattern=my_file_pattern,
-        subject_pattern=my_subject_pattern,
+        file_pattern=all_file_pattern,
+        subject_pattern=all_subject_pattern,
+        logging_verbose=False,
     )
